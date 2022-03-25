@@ -1,5 +1,6 @@
 package net.starlegacy.explosionreversal;
 
+import java.io.IOException;
 import net.starlegacy.explosionreversal.listener.EntityListener;
 import net.starlegacy.explosionreversal.listener.ExplosionListener;
 import org.bukkit.Bukkit;
@@ -25,8 +26,12 @@ public class ExplosionReversalPlugin extends JavaPlugin implements Listener {
         initializeWorldData();
         registerEvents();
         scheduleRegen();
-        registerCommands();
-    }
+		try {
+			registerCommands();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
 
     private void initializeWorldData() {
         worldData = new WorldData();
@@ -41,15 +46,31 @@ public class ExplosionReversalPlugin extends JavaPlugin implements Listener {
 
     private void scheduleRegen() {
         BukkitScheduler scheduler = getServer().getScheduler();
-        scheduler.runTaskTimer(this, () -> Regeneration.pulse(this), 5L, 5L);
+        scheduler.runTaskTimer(this, () -> {
+			try {
+				Regeneration.pulse(this);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}, 5L, 5L);
     }
 
-    private void registerCommands() {
+    private void registerCommands() throws IOException {
         Objects.requireNonNull(getCommand("regen")).setExecutor((sender, command, label, args) -> {
             long start = System.nanoTime();
-            int regeneratedBlocks = Regeneration.regenerateBlocks(this, true);
-            int regeneratedEntities = Regeneration.regenerateEntities(this, true);
-            long elapsed = System.nanoTime() - start;
+			int regeneratedBlocks = 0;
+			try {
+				regeneratedBlocks = Regeneration.regenerateBlocks(this, true);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+			int regeneratedEntities = 0;
+			try {
+				regeneratedEntities = Regeneration.regenerateEntities(this, true);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+			long elapsed = System.nanoTime() - start;
 
             String seconds = new BigDecimal(elapsed / 1_000_000_000.0)
                     .setScale(6, RoundingMode.HALF_UP)

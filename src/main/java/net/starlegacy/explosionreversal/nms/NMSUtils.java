@@ -1,6 +1,20 @@
 package net.starlegacy.explosionreversal.nms;
 
+import com.google.common.io.ByteArrayDataInput;
+import com.google.common.io.ByteArrayDataOutput;
+import com.google.common.io.ByteStreams;
+import java.io.IOException;
+import java.util.Objects;
+import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtAccounter;
+import net.minecraft.nbt.NbtIo;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.state.BlockState;
 import org.bukkit.block.Block;
+import org.bukkit.craftbukkit.v1_18_R2.CraftWorld;
+import org.bukkit.craftbukkit.v1_18_R2.entity.CraftEntity;
 import org.bukkit.entity.Entity;
 
 import javax.annotation.Nullable;
@@ -10,60 +24,64 @@ import java.util.concurrent.Callable;
 import java.util.logging.Logger;
 
 public class NMSUtils {
-    private static NMSWrapper nmsWrapper;
-    private static final Logger logger = Logger.getLogger(NMSUtils.class.getName());
+	@SuppressWarnings("UnstableApiUsage")
+	private static byte[] serialize(CompoundTag nbt) throws IOException {
+		ByteArrayDataOutput output = ByteStreams.newDataOutput();
+		NbtIo.write(nbt, output);
 
-    static {
-        Map<String, Callable<NMSWrapper>> versionMap = new HashMap<>();
-        versionMap.put("net.minecraft.server.v1_16_R3.WorldServer", NMSWrapper_v1_16_R3::new);
+		return output.toByteArray();
+	}
 
-        for (String className : versionMap.keySet()) {
-            try {
-                Class.forName(className);
-                nmsWrapper = versionMap.get(className).call();
-                logger.info("Loaded NMS adapter: " + className);
-                break;
-            } catch (Exception e) {
-                // ignore
-            }
-        }
-
-        if (nmsWrapper == null) {
-            logger.info("No NMS adapter found! Tile entities and entities won't regenerate properly.");
-        }
-    }
+	@SuppressWarnings("UnstableApiUsage")
+	private static CompoundTag deserialize(byte[] bytes) throws IOException {
+		ByteArrayDataInput input = ByteStreams.newDataInput(bytes);
+		NbtAccounter readLimiter = new NbtAccounter(bytes.length * 10L);
+		return NbtIo.read(input, readLimiter);
+	}
 
     @Nullable
-    public static byte[] getTileEntity(Block block) {
-        if (nmsWrapper == null) {
-            return null;
-        }
+	public static byte[] getTileEntity(Block block) throws IOException {
+		ServerLevel worldServer = ((CraftWorld) block.getWorld()).getHandle();
 
-        return nmsWrapper.getTileEntity(block);
-    }
+		BlockPos blockPosition = new BlockPos(block.getX(), block.getY(), block.getZ());
 
-    public static void setTileEntity(Block block, byte[] data) {
-        if (nmsWrapper == null) {
-            return;
-        }
+		BlockEntity tileEntity = worldServer.getBlockEntity(blockPosition);
+		if (tileEntity == null) {
+			return null;
+		}
 
-        nmsWrapper.setTileEntity(block, data);
-    }
+		CompoundTag nbt = tileEntity.saveWithFullMetadata();
+
+		return serialize(nbt);
+	}
+
+	public static void setTileEntity(Block block, byte[] bytes) throws IOException {
+		ServerLevel worldServer = ((CraftWorld) block.getWorld()).getHandle();
+
+		BlockPos blockPosition = new BlockPos(block.getX(), block.getY(), block.getZ());
+
+		CompoundTag nbt = deserialize(bytes);
+
+		BlockState blockData = worldServer.getBlockState(blockPosition);
+
+		BlockEntity tileEntity = BlockEntity.loadStatic(blockPosition, blockData, nbt);
+
+		worldServer.removeBlockEntity(blockPosition);
+		worldServer.setBlockEntity(Objects.requireNonNull(tileEntity));
+	}
 
     @Nullable
-    public static byte[] getEntityData(Entity entity) {
-        if (nmsWrapper == null) {
-            return null;
-        }
+	public static byte[] getEntityData(org.bukkit.entity.Entity entity) throws IOException {
+		net.minecraft.world.entity.Entity nmsEntity = ((CraftEntity) entity).getHandle();
 
-        return nmsWrapper.getEntityData(entity);
-    }
+		CompoundTag nbt = new CompoundTag();
+		nmsEntity.save(nbt);
+		return serialize(nbt);
+	}
 
-    public static void restoreEntityData(Entity entity, byte[] data) {
-        if (nmsWrapper == null) {
-            return;
-        }
-
-        nmsWrapper.restoreEntityData(entity, data);
-    }
+	public static void restoreEntityData(org.bukkit.entity.Entity entity, byte[] entityData) throws IOException {
+		net.minecraft.world.entity.Entity nmsEntity = ((CraftEntity) entity).getHandle();
+		CompoundTag nbt = deserialize(entityData);
+		nmsEntity.load(nbt);
+	}
 }
