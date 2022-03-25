@@ -1,5 +1,6 @@
 package net.starlegacy.explosionreversal.listener;
 
+import java.io.IOException;
 import net.starlegacy.explosionreversal.ExplosionReversalPlugin;
 import net.starlegacy.explosionreversal.data.ExplodedEntityData;
 import org.bukkit.World;
@@ -28,7 +29,7 @@ public class EntityListener implements Listener {
     // put the data in beforehand because some entities such as armor stands lose items before the death event but
     // after this event
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-    public void onEntityDemise(EntityDamageEvent event) {
+    public void onEntityDemise(EntityDamageEvent event) throws IOException {
         Entity entity = event.getEntity();
 
         if (!isRegeneratedEntity(entity)) {
@@ -49,7 +50,7 @@ public class EntityListener implements Listener {
         }
     }
 
-    private ExplodedEntityData getExplodedEntityData(Entity entity) {
+    private ExplodedEntityData getExplodedEntityData(Entity entity) throws IOException {
         double cap = plugin.getSettings().getDistanceDelayCap();
         double delay = plugin.getSettings().getDistanceDelay();
         long time = System.currentTimeMillis() + Math.round(cap * delay * 1000L);
@@ -58,7 +59,7 @@ public class EntityListener implements Listener {
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
-    public void onItemDeath(ItemDespawnEvent event) {
+    public void onItemDeath(ItemDespawnEvent event) throws IOException {
         Item entity = event.getEntity();
 
         if (!isRegeneratedEntity(entity) || !isCausedByExplosion(entity.getLastDamageCause())) {
@@ -69,7 +70,7 @@ public class EntityListener implements Listener {
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
-    public void onEntityDeath(EntityDeathEvent event) {
+    public void onEntityDeath(EntityDeathEvent event) throws IOException {
         LivingEntity entity = event.getEntity();
 
         if (!isRegeneratedEntity(entity) || !isCausedByExplosion(entity.getLastDamageCause())) {
@@ -80,7 +81,7 @@ public class EntityListener implements Listener {
         event.getDrops().clear();
     }
 
-    private void onEntityExplode(Entity entity) {
+    private void onEntityExplode(Entity entity) throws IOException {
         UUID id = entity.getUniqueId();
         ExplodedEntityData explodedEntityData;
 
@@ -129,7 +130,7 @@ public class EntityListener implements Listener {
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
-    public void onPaintingBreak(HangingBreakEvent event) {
+    public void onPaintingBreak(HangingBreakEvent event) throws IOException {
         if (event.getCause() != HangingBreakEvent.RemoveCause.EXPLOSION) {
             return;
         }

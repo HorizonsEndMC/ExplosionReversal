@@ -1,5 +1,6 @@
 package net.starlegacy.explosionreversal.listener;
 
+import java.io.IOException;
 import net.starlegacy.explosionreversal.ExplosionReversalPlugin;
 import net.starlegacy.explosionreversal.Settings;
 import net.starlegacy.explosionreversal.data.ExplodedBlockData;
@@ -32,7 +33,7 @@ public class ExplosionListener implements Listener {
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
-    void onEntityExplode(EntityExplodeEvent event) {
+    void onEntityExplode(EntityExplodeEvent event) throws IOException {
         if (plugin.getSettings().getIgnoredEntityExplosions().contains(event.getEntity().getType())) {
             return;
         }
@@ -44,14 +45,14 @@ public class ExplosionListener implements Listener {
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
-    void onBlockExplode(BlockExplodeEvent event) {
+    void onBlockExplode(BlockExplodeEvent event) throws IOException {
         World world = event.getBlock().getWorld();
         Location location = event.getBlock().getLocation();
         List<Block> blockList = event.blockList();
         processExplosion(world, location, blockList);
     }
 
-    private void processExplosion(World world, Location explosionLocation, List<Block> list) {
+    private void processExplosion(World world, Location explosionLocation, List<Block> list) throws IOException {
         if (plugin.getSettings().getIgnoredWorlds().contains(world.getName())) {
             return;
         }
@@ -77,7 +78,7 @@ public class ExplosionListener implements Listener {
     }
 
     private void processBlock(List<ExplodedBlockData> explodedBlockDataList, double eX, double eY, double eZ,
-                              Iterator<Block> iterator) {
+                              Iterator<Block> iterator) throws IOException {
         Block block = iterator.next();
         BlockData blockData = block.getBlockData();
 
@@ -111,7 +112,7 @@ public class ExplosionListener implements Listener {
                 !includedMaterials.isEmpty() && !includedMaterials.contains(material);
     }
 
-    private void processTileEntity(List<ExplodedBlockData> explodedBlockDataList, Block block, long explodedTime) {
+    private void processTileEntity(List<ExplodedBlockData> explodedBlockDataList, Block block, long explodedTime) throws IOException {
         BlockState state = block.getState();
 
         if (state instanceof InventoryHolder) {
@@ -130,7 +131,7 @@ public class ExplosionListener implements Listener {
     }
 
     private void processDoubleChest(List<ExplodedBlockData> explodedBlockDataList, boolean isRight,
-                                    DoubleChest doubleChest, long explodedTime) {
+                                    DoubleChest doubleChest, long explodedTime) throws IOException {
         DoubleChestInventory inventory = (DoubleChestInventory) doubleChest.getInventory();
         Inventory otherInventory = isRight ? inventory.getRightSide() : inventory.getLeftSide();
         Location otherInventoryLocation = Objects.requireNonNull(otherInventory.getLocation());
