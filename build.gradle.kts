@@ -12,7 +12,7 @@ repositories {
 }
 
 dependencies {
-	paperDevBundle("1.19.1-R0.1-SNAPSHOT")
+	paperDevBundle("1.19.2-R0.1-SNAPSHOT")
 }
 
 java.toolchain.languageVersion.set(of(17))
