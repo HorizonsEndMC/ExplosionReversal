@@ -13,8 +13,8 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import org.bukkit.block.Block;
-import org.bukkit.craftbukkit.v1_19_R3.CraftWorld;
-import org.bukkit.craftbukkit.v1_19_R3.entity.CraftEntity;
+import org.bukkit.craftbukkit.v1_20_R3.CraftWorld;
+import org.bukkit.craftbukkit.v1_20_R3.entity.CraftEntity;
 
 import javax.annotation.Nullable;
 
@@ -30,7 +30,7 @@ public class NMSUtils {
 	@SuppressWarnings("UnstableApiUsage")
 	private static CompoundTag deserialize(byte[] bytes) throws IOException {
 		ByteArrayDataInput input = ByteStreams.newDataInput(bytes);
-		NbtAccounter readLimiter = new NbtAccounter(bytes.length * 10L);
+		NbtAccounter readLimiter = NbtAccounter.create(bytes.length * 10L);
 		return NbtIo.read(input, readLimiter);
 	}
 
