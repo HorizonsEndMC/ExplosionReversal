@@ -19,7 +19,6 @@ import org.bukkit.craftbukkit.v1_20_R3.entity.CraftEntity;
 import javax.annotation.Nullable;
 
 public class NMSUtils {
-	@SuppressWarnings("UnstableApiUsage")
 	private static byte[] serialize(CompoundTag nbt) throws IOException {
 		ByteArrayDataOutput output = ByteStreams.newDataOutput();
 		NbtIo.write(nbt, output);
@@ -27,7 +26,6 @@ public class NMSUtils {
 		return output.toByteArray();
 	}
 
-	@SuppressWarnings("UnstableApiUsage")
 	private static CompoundTag deserialize(byte[] bytes) throws IOException {
 		ByteArrayDataInput input = ByteStreams.newDataInput(bytes);
 		NbtAccounter readLimiter = NbtAccounter.create(bytes.length * 10L);

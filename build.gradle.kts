@@ -15,4 +15,8 @@ dependencies {
 	paperweight.paperDevBundle("1.20.4-R0.1-SNAPSHOT")
 }
 
+tasks.assemble {
+	dependsOn(tasks.reobfJar)
+}
+
 java.toolchain.languageVersion.set(of(17))
