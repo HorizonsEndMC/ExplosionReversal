@@ -44,7 +44,7 @@ public class EntityListener implements Listener {
         pendingDeathEntities.put(entity.getUniqueId(), explodedEntityData);
 
         // items don't call entity death event
-        if (entity.getType() == EntityType.DROPPED_ITEM) {
+        if (entity.getType() == EntityType.ITEM) {
             onEntityExplode(entity);
             entity.remove();
         }

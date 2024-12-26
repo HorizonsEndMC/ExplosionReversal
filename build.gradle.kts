@@ -2,21 +2,19 @@ import org.gradle.jvm.toolchain.JavaLanguageVersion.of
 
 plugins {
 	java
-	id("io.papermc.paperweight.userdev") version "1.5.11"
+	id("io.papermc.paperweight.userdev") version "2.0.0-beta.8"
 }
 
 repositories {
 	mavenCentral()
 
-	maven("https://papermc.io/repo/repository/maven-public/") // Paper
+	maven("https://repo.papermc.io/repository/maven-public/") // Paper
 }
 
 dependencies {
-	paperweight.paperDevBundle("1.20.4-R0.1-SNAPSHOT")
+	paperweight.paperDevBundle("1.21.4-R0.1-SNAPSHOT")
 }
 
-tasks.assemble {
-	dependsOn(tasks.reobfJar)
-}
+paperweight.reobfArtifactConfiguration = io.papermc.paperweight.userdev.ReobfArtifactConfiguration.MOJANG_PRODUCTION
 
-java.toolchain.languageVersion.set(of(17))
+java.toolchain.languageVersion.set(of(21))

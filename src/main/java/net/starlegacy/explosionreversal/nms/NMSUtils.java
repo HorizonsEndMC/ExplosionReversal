@@ -13,8 +13,8 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import org.bukkit.block.Block;
-import org.bukkit.craftbukkit.v1_20_R3.CraftWorld;
-import org.bukkit.craftbukkit.v1_20_R3.entity.CraftEntity;
+import org.bukkit.craftbukkit.CraftWorld;
+import org.bukkit.craftbukkit.entity.CraftEntity;
 
 import javax.annotation.Nullable;
 
@@ -43,7 +43,7 @@ public class NMSUtils {
 			return null;
 		}
 
-		CompoundTag nbt = tileEntity.saveWithFullMetadata();
+		CompoundTag nbt = tileEntity.saveWithFullMetadata(worldServer.registryAccess());
 
 		return serialize(nbt);
 	}
@@ -57,7 +57,7 @@ public class NMSUtils {
 
 		BlockState blockData = worldServer.getBlockState(blockPosition);
 
-		BlockEntity tileEntity = BlockEntity.loadStatic(blockPosition, blockData, nbt);
+		BlockEntity tileEntity = BlockEntity.loadStatic(blockPosition, blockData, nbt, worldServer.registryAccess());
 
 		worldServer.removeBlockEntity(blockPosition);
 		worldServer.setBlockEntity(Objects.requireNonNull(tileEntity));
