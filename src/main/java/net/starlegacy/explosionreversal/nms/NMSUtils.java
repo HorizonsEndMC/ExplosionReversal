@@ -9,9 +9,13 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtAccounter;
 import net.minecraft.nbt.NbtIo;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.util.ProblemReporter;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.storage.TagValueInput;
+import net.minecraft.world.level.storage.TagValueOutput;
 import org.bukkit.block.Block;
 import org.bukkit.craftbukkit.CraftWorld;
 import org.bukkit.craftbukkit.entity.CraftEntity;
@@ -68,13 +72,13 @@ public class NMSUtils {
 		net.minecraft.world.entity.Entity nmsEntity = ((CraftEntity) entity).getHandle();
 
 		CompoundTag nbt = new CompoundTag();
-		nmsEntity.save(nbt);
+		nmsEntity.save(TagValueOutput.createWrappingWithContext(ProblemReporter.DISCARDING, nmsEntity.registryAccess(), nbt));
 		return serialize(nbt);
 	}
 
 	public static void restoreEntityData(org.bukkit.entity.Entity entity, byte[] entityData) throws IOException {
 		net.minecraft.world.entity.Entity nmsEntity = ((CraftEntity) entity).getHandle();
 		CompoundTag nbt = deserialize(entityData);
-		nmsEntity.load(nbt);
+		nmsEntity.load(TagValueInput.create(ProblemReporter.DISCARDING, MinecraftServer.getServer().registryAccess(), nbt));
 	}
 }
