@@ -8,12 +8,10 @@ import net.starlegacy.explosionreversal.nms.NMSUtils;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
-import org.bukkit.block.Block;
-import org.bukkit.block.BlockFace;
-import org.bukkit.block.BlockState;
-import org.bukkit.block.DoubleChest;
+import org.bukkit.block.*;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.block.data.type.*;
+import org.bukkit.block.data.type.Chest;
 import org.bukkit.block.data.type.Comparator;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -176,26 +174,46 @@ public class ExplosionListener implements Listener {
         for (Block adjacentBlock : adjacentBlocks) {
             // This block is a potential block that we want to determine if it is supported
             BlockData blockData = adjacentBlock.getBlockData();
-            Block supportBlock = getSupportingBlock(blockData, adjacentBlock);
+			Material material = blockData.getMaterial();
+			if (material != Material.REDSTONE_WIRE
+				&& material != Material.REDSTONE_TORCH
+				&& material != Material.REDSTONE_WALL_TORCH
+				&& material != Material.REPEATER
+				&& material != Material.COMPARATOR
+			) continue;
 
-            if (supportBlock != null && !blockData.isSupported(supportBlock)) {
-                // We care if this block is supported and it is not currently supported; add to list of exploded blocks
-                explodedBlocks.add(adjacentBlock);
-            }
+			if (!isSupportedByExplodedBlock(explodedBlocks, adjacentBlock)) continue;
+
+			// adjacentBlock is a block we care about, it is supported by supportBlock, and supportBlock is about to be exploded
+			// add adjacentBlock to the list of exploded blocks
+			explodedBlocks.add(adjacentBlock);
         }
     }
 
-    private static Block getSupportingBlock(BlockData blockData, Block block) {
-        if (blockData instanceof RedstoneWire || blockData instanceof Repeater || blockData instanceof Comparator) {
-            return block.getRelative(BlockFace.DOWN);
-        } else if (blockData instanceof RedstoneWallTorch) {
-            BlockFace oppositeFace = ((RedstoneWallTorch) blockData).getFacing().getOppositeFace();
-            return block.getRelative(oppositeFace);
-        } else if (block.getType() == Material.REDSTONE_TORCH) {
+	// Can't use BlockData.isSupported(), as the underlying NMS gets the current block state and sees air
+	// Use the list of exploded blocks as that will have the correct block state, and basically re-implement BlockData.isSupported()
+    private static Boolean isSupportedByExplodedBlock(List<Block> explodedBlocks, Block adjacentBlock) {
+		BlockData adjacentBlockData = adjacentBlock.getBlockData();
+        if (adjacentBlockData instanceof RedstoneWire || adjacentBlockData instanceof Repeater || adjacentBlockData instanceof Comparator) {
+			Block relativeBlock = adjacentBlock.getRelative(BlockFace.DOWN);
+			if (!explodedBlocks.contains(relativeBlock)) return false;
+
+			return adjacentBlock.getRelative(BlockFace.DOWN).getBlockData().isFaceSturdy(BlockFace.UP, BlockSupport.FULL);
+        } else if (adjacentBlockData instanceof RedstoneWallTorch) {
+			BlockFace face = ((RedstoneWallTorch) adjacentBlockData).getFacing();
+            BlockFace oppositeFace = face.getOppositeFace();
+			Block relativeBlock = adjacentBlock.getRelative(oppositeFace);
+			if (!explodedBlocks.contains(relativeBlock)) return false;
+
+			return adjacentBlock.getRelative(oppositeFace).getBlockData().isFaceSturdy(face, BlockSupport.FULL);
+        } else if (adjacentBlock.getType() == Material.REDSTONE_TORCH) {
             // This redstone torch is a ground torch
-            return block.getRelative(BlockFace.DOWN);
+			Block relativeBlock = adjacentBlock.getRelative(BlockFace.DOWN);
+			if (!explodedBlocks.contains(relativeBlock)) return false;
+
+            return adjacentBlock.getRelative(BlockFace.DOWN).getBlockData().isFaceSturdy(BlockFace.UP, BlockSupport.CENTER);
         }
         // Don't care if this block is not supported
-        return null;
+        return false;
     }
 }
