@@ -9,10 +9,12 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
 import org.bukkit.block.BlockState;
 import org.bukkit.block.DoubleChest;
 import org.bukkit.block.data.BlockData;
-import org.bukkit.block.data.type.Chest;
+import org.bukkit.block.data.type.*;
+import org.bukkit.block.data.type.Comparator;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -41,6 +43,7 @@ public class ExplosionListener implements Listener {
         World world = event.getEntity().getWorld();
         Location location = event.getLocation();
         List<Block> blockList = event.blockList();
+        addRedstone(blockList);
         processExplosion(world, location, blockList);
     }
 
@@ -49,6 +52,7 @@ public class ExplosionListener implements Listener {
         World world = event.getBlock().getWorld();
         Location location = event.getBlock().getLocation();
         List<Block> blockList = event.blockList();
+        addRedstone(blockList);
         processExplosion(world, location, blockList);
     }
 
@@ -145,5 +149,53 @@ public class ExplosionListener implements Listener {
 
         otherInventory.clear();
         other.setType(Material.AIR, false);
+    }
+
+    private static void addRedstone(List<Block> explodedBlocks) {
+        List<Block> adjacentBlocks = getAdjacentBlocks(explodedBlocks);
+        addSupportedRedstoneBlocks(explodedBlocks, adjacentBlocks);
+    }
+
+    private static List<Block> getAdjacentBlocks(List<Block> explodedBlocks) {
+        List<Block> adjacentBlocks = new ArrayList<>();
+        BlockFace[] cardinalDirections = {BlockFace.NORTH, BlockFace.EAST, BlockFace.SOUTH, BlockFace.WEST, BlockFace.UP, BlockFace.DOWN};
+
+        for (Block block : explodedBlocks) {
+            for (BlockFace face : cardinalDirections) {
+                Block adjacentBlock = block.getRelative(face);
+                if (!explodedBlocks.contains(adjacentBlock)) {
+                    adjacentBlocks.add(adjacentBlock);
+                }
+            }
+        }
+
+        return adjacentBlocks;
+    }
+
+    private static void addSupportedRedstoneBlocks(List<Block> explodedBlocks, List<Block> adjacentBlocks) {
+        for (Block adjacentBlock : adjacentBlocks) {
+            // This block is a potential block that we want to determine if it is supported
+            BlockData blockData = adjacentBlock.getBlockData();
+            Block supportBlock = getSupportingBlock(blockData, adjacentBlock);
+
+            if (supportBlock != null && !blockData.isSupported(supportBlock)) {
+                // We care if this block is supported and it is not currently supported; add to list of exploded blocks
+                explodedBlocks.add(adjacentBlock);
+            }
+        }
+    }
+
+    private static Block getSupportingBlock(BlockData blockData, Block block) {
+        if (blockData instanceof RedstoneWire || blockData instanceof Repeater || blockData instanceof Comparator) {
+            return block.getRelative(BlockFace.DOWN);
+        } else if (blockData instanceof RedstoneWallTorch) {
+            BlockFace oppositeFace = ((RedstoneWallTorch) blockData).getFacing().getOppositeFace();
+            return block.getRelative(oppositeFace);
+        } else if (block.getType() == Material.REDSTONE_TORCH) {
+            // This redstone torch is a ground torch
+            return block.getRelative(BlockFace.DOWN);
+        }
+        // Don't care if this block is not supported
+        return null;
     }
 }
